@@ -1,0 +1,91 @@
+name: Build and push Docker image
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+    # 只碰文档时不触发构建
+    paths-ignore:
+      - "**/*.md"
+      - ".gitignore"
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - ".gitignore"
+  workflow_dispatch:
+
+env:
+  IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/self-mcp
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      # PR 只构建不推送，避免未合并的改动污染 registry
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=short
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # 冒烟测试：起容器，确认 HTTP 服务真的能应答 MCP 协议
+      - name: Smoke test
+        run: |
+          docker build -t smoke:local --load .
+          docker run -d --name smoke -p 8931:8931 smoke:local
+          for i in $(seq 1 30); do
+            if docker exec smoke python -c "import socket,sys;s=socket.socket();s.settimeout(2);sys.exit(s.connect_ex(('127.0.0.1',8931)))"; then
+              echo "服务已就绪"; break
+            fi
+            [ "$i" = "30" ] && { echo "启动超时"; docker logs smoke; exit 1; }
+            sleep 2
+          done
+          # 两个入口都必须存在
+          docker exec smoke which mcp-hotcontent mcp-docx-comments
+          # 真实 MCP 协议调用：list_tools 必须返回 4 个工具
+          docker exec smoke python - <<'PY'
+          import asyncio, sys
+          from fastmcp import Client
+          async def m():
+              async with Client("http://127.0.0.1:8931/mcp") as c:
+                  tools = [t.name for t in await c.list_tools()]
+                  print("tools:", tools)
+                  assert len(tools) == 4, f"期望 4 个工具，实际 {len(tools)}"
+          asyncio.run(m())
+          PY
+          docker logs smoke | tail -5
+          docker rm -f smoke

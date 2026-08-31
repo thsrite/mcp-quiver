@@ -13,7 +13,9 @@ USER app
 
 # 本镜像只跑 hotcontent（HTTP）；docx-comments 是 stdio，由客户端直接拉起，不需要容器
 EXPOSE 8931
+# 用 TCP 探测而非 HTTP GET：MCP 端点对裸 GET 返回 406 Not Acceptable（它要
+# Accept: text/event-stream），urlopen 会抛 HTTPError 导致容器永远 unhealthy。
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD python -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8931/mcp',timeout=4)" || exit 1
+  CMD python -c "import os,socket,sys;s=socket.socket();s.settimeout(4);sys.exit(s.connect_ex(('127.0.0.1',int(os.environ.get('PORT','8931')))))"
 
 CMD ["mcp-hotcontent"]
