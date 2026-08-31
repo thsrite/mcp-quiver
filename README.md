@@ -2,22 +2,25 @@
 
 自建 MCP 服务集合。
 
-| 服务 | 说明 |
-|---|---|
-| `hotcontent` | 爆款内容雷达：全网热榜（85 榜）、公众号爆款文章（含全文正文）、小红书爆款笔记 |
+| 服务 | 说明 | 传输 |
+|---|---|---|
+| `hotcontent` | 爆款内容雷达：全网热榜（85 榜）、公众号爆款文章（含全文正文）、小红书爆款笔记 | http / stdio |
+| `docx-comments` | Word 批注：提取批注文本、把批注内联进正文 | stdio |
+
+## 安装
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -e .
+```
+
+装一次两个服务都可用，分别由 `mcp-hotcontent` 和 `mcp-docx-comments` 启动。
 
 ---
 
 ## hotcontent — 爆款内容雷达
 
 把三个**零凭据**数据源暴露成 MCP 工具，供 AI 助理查询后交给模型做选题对标、热点追踪和内容分析。无需 API key，无需登录。
-
-### 安装
-
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -e .
-```
 
 ### 运行
 
@@ -98,3 +101,34 @@ stdio：
   ```
 - 全程标准 TLS 证书校验；本机 DNS 被分流工具劫持成 `198.18.0.0/15` fake-ip 时，回退 DoH 解析真实 IP 直连，证书校验保持开启
 - 结果缓存 5 分钟；单次返回上限 50 条，正文默认截断 600 字，避免撑爆助理上下文
+
+
+---
+
+## docx-comments — Word 批注处理
+
+把 `.docx` 里的批注读出来，或内联进正文——让模型能一次看到「原文 + 审阅意见」的对应关系，而不是丢失批注。
+
+### 运行
+
+```bash
+mcp-docx-comments        # stdio
+```
+
+### 客户端配置
+
+```json
+{
+  "command": "/path/to/.venv/bin/mcp-docx-comments"
+}
+```
+
+### 工具
+
+| 工具 | 参数 | 说明 |
+|---|---|---|
+| `extract_comments` | `file_path` 或 `file_base64` | 提取全部批注文本 |
+| `inline_comments_file` | `input_path` `output_path` | 读文件，批注以 `【批注：…】` 插入正文后另存 |
+| `inline_comments_base64` | `file_base64` `filename` | 同上，收发都走 base64 |
+
+内联后的批注是红色加粗的 run，紧跟被批注内容之后。

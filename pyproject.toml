@@ -1,10 +1,15 @@
 [project]
 name = "self-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "自建 MCP 服务集合"
 requires-python = ">=3.10"
+# 集合内各服务的依赖合并在一起，装一次全部可用。
+# hotcontent 用 fastmcp v3；docx-comments 用官方 mcp SDK 的 FastMCP（两套库）。
 dependencies = [
     "fastmcp>=3.4,<4",
+    "mcp",
+    "python-docx",
+    "lxml",
 ]
 
 [build-system]
@@ -12,7 +17,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/hotcontent_mcp"]
+packages = ["src/hotcontent_mcp", "src/docx_comments_mcp"]
 
 [project.scripts]
 mcp-hotcontent = "hotcontent_mcp:main"
+mcp-docx-comments = "docx_comments_mcp:main"
