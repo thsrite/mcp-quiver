@@ -16,6 +16,46 @@ python3 -m venv .venv
 
 装一次两个服务都可用，分别由 `mcp-hotcontent` 和 `mcp-docx-comments` 启动。
 
+## 鉴权（HTTP 传输）
+
+**默认无鉴权**——谁能访问端口谁就能调。设 `MCP_AUTH_TOKEN` 即启用 Bearer 校验：
+
+```bash
+# 生成一个令牌
+openssl rand -hex 24
+
+# 本地
+MCP_AUTH_TOKEN=<令牌> mcp-hotcontent
+
+# Docker
+docker run -d -p 8931:8931 -e MCP_AUTH_TOKEN=<令牌> <user>/mcp-quiver
+
+# 令牌放文件里，不出现在命令行和 ps 输出中
+echo "MCP_AUTH_TOKEN=<令牌>" > mcp.env
+docker run -d -p 8931:8931 --env-file mcp.env <user>/mcp-quiver
+```
+
+客户端带 header：
+
+```json
+{
+  "transport": "http",
+  "url": "http://127.0.0.1:8931/mcp",
+  "headers": { "Authorization": "Bearer <令牌>" }
+}
+```
+
+实测行为：
+
+| | 未设 `MCP_AUTH_TOKEN` | 设了 |
+|---|---|---|
+| 不带 header | 放行 | **401** |
+| 错误令牌 | 放行 | **401** |
+| 正确令牌 | 放行 | 放行 |
+
+只对 HTTP 传输有意义；stdio 走本地进程管道，由操作系统权限保护，不经过这层。
+把服务暴露到局域网或公网时**务必设置**。
+
 ---
 
 ## hotcontent — 爆款内容雷达

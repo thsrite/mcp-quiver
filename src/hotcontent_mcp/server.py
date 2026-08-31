@@ -23,7 +23,21 @@ from pydantic import Field
 
 from .fetchers import gzh, tophub, xhs
 
-mcp = FastMCP("hotcontent")
+def _auth_from_env():
+    """设了 MCP_AUTH_TOKEN 就启用 Bearer 鉴权，否则保持开放。
+
+    客户端需带 `Authorization: Bearer <token>`。仅对 HTTP 传输有意义——
+    stdio 走的是本地进程管道，由操作系统权限保护，不经过这层。
+    """
+    token = os.environ.get("MCP_AUTH_TOKEN", "").strip()
+    if not token:
+        return None
+    from fastmcp.server.auth.providers.jwt import StaticTokenVerifier
+
+    return StaticTokenVerifier({token: {"client_id": "quiver", "scopes": []}})
+
+
+mcp = FastMCP("hotcontent", auth=_auth_from_env())
 
 # 单次调用的硬上限，防止把助理的上下文撑爆
 MAX_ITEMS = 50
