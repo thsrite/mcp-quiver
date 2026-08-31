@@ -1,7 +1,7 @@
 [project]
-name = "self-mcp"
+name = "mcp-quiver"
 version = "0.2.0"
-description = "自建 MCP 服务集合"
+description = "自建 MCP 服务集合（箭袋）"
 requires-python = ">=3.10"
 # 集合内各服务的依赖合并在一起，装一次全部可用。两个服务统一用 fastmcp v3。
 dependencies = [

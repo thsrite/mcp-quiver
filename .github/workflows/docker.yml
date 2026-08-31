@@ -33,10 +33,10 @@ jobs:
         run: |
           if [ -n "$USER_NAME" ] && [ -n "$TOKEN" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
-            echo "image=$USER_NAME/self-mcp" >> "$GITHUB_OUTPUT"
+            echo "image=$USER_NAME/mcp-quiver" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "image=local/self-mcp" >> "$GITHUB_OUTPUT"
+            echo "image=local/mcp-quiver" >> "$GITHUB_OUTPUT"
             echo "::notice::未配置 DOCKERHUB_USERNAME / DOCKERHUB_TOKEN，本次只构建+冒烟测试，不推送"
           fi
 
