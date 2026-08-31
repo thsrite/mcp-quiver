@@ -9,7 +9,7 @@ import tempfile
 
 import lxml.etree as ET
 from docx import Document
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 XML_SPACE = "{http://www.w3.org/XML/1998/namespace}space"
@@ -75,7 +75,7 @@ def _inline_comments(doc, comments):
     return processed
 
 
-@mcp.tool()
+@mcp.tool
 def extract_comments(file_base64: str = "", file_path: str = "") -> str:
     """提取 Word 文档中的所有批注内容。
 
@@ -112,7 +112,7 @@ def extract_comments(file_base64: str = "", file_path: str = "") -> str:
     return "\n".join(lines)
 
 
-@mcp.tool()
+@mcp.tool
 def inline_comments_base64(file_base64: str, filename: str = "document.docx") -> str:
     """将 Word 文档中的批注内联到正文中。
 
@@ -162,7 +162,7 @@ def inline_comments_base64(file_base64: str, filename: str = "document.docx") ->
         os.unlink(tmp_in_path)
 
 
-@mcp.tool()
+@mcp.tool
 def inline_comments_file(input_path: str, output_path: str = "") -> str:
     """将本地 Word 文档中的批注内联到正文中。
 
@@ -196,7 +196,14 @@ def inline_comments_file(input_path: str, output_path: str = "") -> str:
     )
 
 
-def main():
+def main() -> None:
+    """入口：默认 stdio；设 MCP_TRANSPORT=http 可切成 HTTP。"""
+    transport = os.environ.get("MCP_TRANSPORT", "stdio")
+    if transport == "http":
+        mcp.run(transport="http",
+                host=os.environ.get("HOST", "0.0.0.0"),
+                port=int(os.environ.get("PORT", "8932")))
+        return
     mcp.run(transport="stdio")
 
 

@@ -5,7 +5,7 @@
 | 服务 | 说明 | 传输 |
 |---|---|---|
 | `hotcontent` | 爆款内容雷达：全网热榜（85 榜）、公众号爆款文章（含全文正文）、小红书爆款笔记 | http / stdio |
-| `docx-comments` | Word 批注：提取批注文本、把批注内联进正文 | stdio |
+| `docx-comments` | Word 批注：提取批注文本、把批注内联进正文 | stdio / http |
 
 ## 安装
 
@@ -112,7 +112,8 @@ stdio：
 ### 运行
 
 ```bash
-mcp-docx-comments        # stdio
+mcp-docx-comments                        # stdio（默认）
+MCP_TRANSPORT=http PORT=8932 mcp-docx-comments   # HTTP
 ```
 
 ### 客户端配置
@@ -132,3 +133,7 @@ mcp-docx-comments        # stdio
 | `inline_comments_base64` | `file_base64` `filename` | 同上，收发都走 base64 |
 
 内联后的批注是红色加粗的 run，紧跟被批注内容之后。
+
+> 两个服务统一使用 fastmcp v3。docx-comments 早期基于官方 `mcp` SDK 的 FastMCP，
+> 迁移后**结构化返回不再包一层 `result`**：原先 `{"result": "..."}`，现在直接是字符串。
+> 按 MCP 标准读 content 文本的客户端不受影响。

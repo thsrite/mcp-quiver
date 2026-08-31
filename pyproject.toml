@@ -3,11 +3,9 @@ name = "self-mcp"
 version = "0.2.0"
 description = "自建 MCP 服务集合"
 requires-python = ">=3.10"
-# 集合内各服务的依赖合并在一起，装一次全部可用。
-# hotcontent 用 fastmcp v3；docx-comments 用官方 mcp SDK 的 FastMCP（两套库）。
+# 集合内各服务的依赖合并在一起，装一次全部可用。两个服务统一用 fastmcp v3。
 dependencies = [
     "fastmcp>=3.4,<4",
-    "mcp",
     "python-docx",
     "lxml",
 ]
